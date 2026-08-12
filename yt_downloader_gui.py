@@ -36,9 +36,16 @@ from pathlib import Path
 
 try:
     import tkinter as tk
-    from tkinter import ttk, filedialog, messagebox
+    from tkinter import filedialog
 except ImportError:
     print("ไม่พบโมดูล tkinter กรุณาติดตั้ง Python เวอร์ชันที่มี tkinter รวมอยู่ด้วย")
+    sys.exit(1)
+
+try:
+    import ttkbootstrap as tb
+    from ttkbootstrap.dialogs import Messagebox
+except ImportError:
+    print("ไม่พบไลบรารี ttkbootstrap กรุณาติดตั้งด้วยคำสั่ง:\n    pip install ttkbootstrap")
     sys.exit(1)
 
 try:
@@ -66,10 +73,10 @@ def check_ffmpeg() -> bool:
 
 
 class DownloaderApp:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: "tb.Window"):
         self.root = root
         root.title(APP_TITLE)
-        root.geometry("580x460")
+        root.geometry("600x480")
         root.resizable(False, False)
 
         self.msg_queue: "queue.Queue" = queue.Queue()
@@ -87,83 +94,97 @@ class DownloaderApp:
         self._poll_queue()
 
         if not check_ffmpeg():
-            messagebox.showwarning(
-                "ไม่พบ ffmpeg",
-                "โปรแกรมนี้ต้องใช้ ffmpeg เพื่อแปลง/รวมไฟล์คุณภาพสูงสุด\n\n"
-                "กรุณาติดตั้ง ffmpeg ก่อนใช้งาน:\n"
-                "  Windows: https://ffmpeg.org/download.html\n"
-                "  macOS:   brew install ffmpeg\n"
-                "  Linux:   sudo apt install ffmpeg",
+            Messagebox.show_warning(
+                message=(
+                    "โปรแกรมนี้ต้องใช้ ffmpeg เพื่อแปลง/รวมไฟล์คุณภาพสูงสุด\n\n"
+                    "กรุณาติดตั้ง ffmpeg ก่อนใช้งาน:\n"
+                    "  Windows: https://ffmpeg.org/download.html\n"
+                    "  macOS:   brew install ffmpeg\n"
+                    "  Linux:   sudo apt install ffmpeg"
+                ),
+                title="ไม่พบ ffmpeg",
+                parent=self.root,
             )
 
     # ---------------------------------------------------------------- UI ---
     def _build_ui(self):
-        pad = {"padx": 14, "pady": 6}
+        pad = {"padx": 16, "pady": 6}
 
-        tk.Label(
-            self.root, text="วาง YouTube URL:", font=("TkDefaultFont", 10, "bold")
+        tb.Label(
+            self.root,
+            text="วาง YouTube URL:",
+            font=("TkDefaultFont", 11, "bold"),
+            bootstyle="light",
         ).pack(anchor="w", **pad)
 
-        url_entry = tk.Entry(self.root, textvariable=self.url_var, width=68)
-        url_entry.pack(padx=14, fill="x")
+        url_entry = tb.Entry(self.root, textvariable=self.url_var, width=68, bootstyle="primary")
+        url_entry.pack(padx=16, fill="x")
         url_entry.focus()
 
-        fmt_frame = tk.LabelFrame(self.root, text="รูปแบบไฟล์ผลลัพธ์")
+        fmt_frame = tb.Labelframe(self.root, text="รูปแบบไฟล์ผลลัพธ์", bootstyle="primary")
         fmt_frame.pack(anchor="w", fill="x", **pad)
-        tk.Radiobutton(
+        tb.Radiobutton(
             fmt_frame,
             text="🎵 MP3 — เสียงคุณภาพสูงสุด (320 kbps)",
             variable=self.format_var,
             value="mp3",
-        ).pack(anchor="w", padx=10, pady=2)
-        tk.Radiobutton(
+            bootstyle="primary",
+        ).pack(anchor="w", padx=10, pady=4)
+        tb.Radiobutton(
             fmt_frame,
             text="🎬 MP4 — วิดีโอคุณภาพสูงสุดที่มี (รวมเสียง+ภาพที่ดีที่สุด)",
             variable=self.format_var,
             value="mp4",
-        ).pack(anchor="w", padx=10, pady=2)
+            bootstyle="primary",
+        ).pack(anchor="w", padx=10, pady=4)
 
-        dir_frame = tk.Frame(self.root)
+        dir_frame = tb.Frame(self.root)
         dir_frame.pack(anchor="w", fill="x", **pad)
-        tk.Label(dir_frame, text="บันทึกไปที่โฟลเดอร์:").pack(side="left")
-        tk.Entry(dir_frame, textvariable=self.output_dir, width=38).pack(
+        tb.Label(dir_frame, text="บันทึกไปที่โฟลเดอร์:").pack(side="left")
+        tb.Entry(dir_frame, textvariable=self.output_dir, width=38).pack(
             side="left", padx=6
         )
-        tk.Button(dir_frame, text="เลือกโฟลเดอร์...", command=self._choose_dir).pack(
-            side="left"
-        )
+        tb.Button(
+            dir_frame,
+            text="เลือกโฟลเดอร์...",
+            command=self._choose_dir,
+            bootstyle="secondary-outline",
+        ).pack(side="left")
 
-        btn_frame = tk.Frame(self.root)
-        btn_frame.pack(pady=10)
-        self.download_btn = tk.Button(
+        btn_frame = tb.Frame(self.root)
+        btn_frame.pack(pady=12)
+        self.download_btn = tb.Button(
             btn_frame,
             text="⬇  ดาวน์โหลด",
             width=20,
-            height=1,
-            bg="#e63946",
-            fg="white",
-            activebackground="#c1121f",
+            bootstyle="danger",
             command=self._start_download,
         )
         self.download_btn.pack(side="left", padx=6)
-        tk.Button(
-            btn_frame, text="เปิดโฟลเดอร์ผลลัพธ์", command=self._open_output_dir
+        tb.Button(
+            btn_frame,
+            text="เปิดโฟลเดอร์ผลลัพธ์",
+            command=self._open_output_dir,
+            bootstyle="secondary-outline",
         ).pack(side="left", padx=6)
 
-        self.progress = ttk.Progressbar(
-            self.root, orient="horizontal", length=540, mode="determinate"
+        self.progress = tb.Progressbar(
+            self.root,
+            orient="horizontal",
+            length=560,
+            mode="determinate",
+            bootstyle="success-striped",
         )
-        self.progress.pack(padx=14, pady=(4, 2))
+        self.progress.pack(padx=16, pady=(4, 2))
 
         self.status_var = tk.StringVar(value="พร้อมทำงาน")
-        tk.Label(self.root, textvariable=self.status_var, fg="#333").pack(
-            anchor="w", padx=14
+        tb.Label(self.root, textvariable=self.status_var, bootstyle="secondary").pack(
+            anchor="w", padx=16
         )
 
-        self.log_text = tk.Text(
-            self.root, height=9, width=72, state="disabled", bg="#f7f7f7"
-        )
-        self.log_text.pack(padx=14, pady=8)
+        self.log_text = tb.ScrolledText(self.root, height=9, auto_hide=True)
+        self.log_text.text.configure(state="disabled")
+        self.log_text.pack(padx=16, pady=8, fill="both")
 
     # ------------------------------------------------------------- helpers ---
     def _choose_dir(self):
@@ -174,7 +195,9 @@ class DownloaderApp:
     def _open_output_dir(self):
         path = self.output_dir.get()
         if not os.path.isdir(path):
-            messagebox.showerror("ผิดพลาด", "ไม่พบโฟลเดอร์นี้")
+            Messagebox.show_error(
+                message="ไม่พบโฟลเดอร์นี้", title="ผิดพลาด", parent=self.root
+            )
             return
         if sys.platform == "darwin":
             subprocess.run(["open", path])
@@ -184,20 +207,24 @@ class DownloaderApp:
             subprocess.run(["xdg-open", path])
 
     def _log(self, message: str):
-        self.log_text.configure(state="normal")
-        self.log_text.insert("end", message + "\n")
-        self.log_text.see("end")
-        self.log_text.configure(state="disabled")
+        self.log_text.text.configure(state="normal")
+        self.log_text.text.insert("end", message + "\n")
+        self.log_text.text.see("end")
+        self.log_text.text.configure(state="disabled")
 
     # -------------------------------------------------------------- action ---
     def _start_download(self):
         url = self.url_var.get().strip()
         if not url:
-            messagebox.showwarning("แจ้งเตือน", "กรุณาวาง URL ของ YouTube ก่อน")
+            Messagebox.show_warning(
+                message="กรุณาวาง URL ของ YouTube ก่อน", title="แจ้งเตือน", parent=self.root
+            )
             return
         if not check_ffmpeg():
-            messagebox.showerror(
-                "ไม่พบ ffmpeg", "กรุณาติดตั้ง ffmpeg ก่อนใช้งานโปรแกรมนี้"
+            Messagebox.show_error(
+                message="กรุณาติดตั้ง ffmpeg ก่อนใช้งานโปรแกรมนี้",
+                title="ไม่พบ ffmpeg",
+                parent=self.root,
             )
             return
 
@@ -205,7 +232,11 @@ class DownloaderApp:
         try:
             os.makedirs(out_dir, exist_ok=True)
         except OSError as e:
-            messagebox.showerror("ผิดพลาด", f"ไม่สามารถสร้างโฟลเดอร์ปลายทางได้: {e}")
+            Messagebox.show_error(
+                message=f"ไม่สามารถสร้างโฟลเดอร์ปลายทางได้: {e}",
+                title="ผิดพลาด",
+                parent=self.root,
+            )
             return
 
         self.download_btn.config(state="disabled", text="กำลังดาวน์โหลด...")
@@ -287,21 +318,25 @@ class DownloaderApp:
                     self._log(f"✅ ดาวน์โหลดเสร็จสมบูรณ์: {payload}")
                     self.progress["value"] = 100
                     self.download_btn.config(state="normal", text="⬇  ดาวน์โหลด")
-                    messagebox.showinfo(
-                        "เสร็จสมบูรณ์", f'ดาวน์โหลด "{payload}" เรียบร้อยแล้ว'
+                    Messagebox.show_info(
+                        message=f'ดาวน์โหลด "{payload}" เรียบร้อยแล้ว',
+                        title="เสร็จสมบูรณ์",
+                        parent=self.root,
                     )
                 elif kind == "error":
                     self.status_var.set("เกิดข้อผิดพลาด")
                     self._log(f"❌ ข้อผิดพลาด: {payload}")
                     self.download_btn.config(state="normal", text="⬇  ดาวน์โหลด")
-                    messagebox.showerror("เกิดข้อผิดพลาด", payload)
+                    Messagebox.show_error(
+                        message=payload, title="เกิดข้อผิดพลาด", parent=self.root
+                    )
         except queue.Empty:
             pass
         self.root.after(150, self._poll_queue)
 
 
 def main():
-    root = tk.Tk()
+    root = tb.Window(title=APP_TITLE, themename="darkly")
     DownloaderApp(root)
     root.mainloop()
 
